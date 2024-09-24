@@ -12,20 +12,21 @@ export default function Routes() {
   
   const { signed, loading } = useAuth();
 
-  // Se estiver carregando, exibe um indicador de carregamento
+ 
   if (loading) {
     return (
+
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" color="#666" />
       </View>
     );
   }
 
-  // Retorna o container de navegação
   return (
     <NavigationContainer>
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
-        {/* Verifica se o usuário está autenticado e renderiza as rotas apropriadas */}
+
+
         {signed ? (
           <RootStack.Screen name="PrivateRoutes" component={PrivateRoutes} />
         ) : (
@@ -35,3 +36,6 @@ export default function Routes() {
     </NavigationContainer>
   );
 }
+
+  
+  // Se o estado de loading for verdadeiro, exibe um indicador de carregamento

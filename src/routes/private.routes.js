@@ -11,14 +11,14 @@ export default function PrivateRoutes() {
     <Drawer.Navigator 
       screenOptions={{ 
         title: "", 
-        drawerActiveBackgroundColor: '#7d7d7d', 
+        drawerActiveBackgroundColor: '#333333', 
         drawerActiveTintColor: '#ffffff', 
         drawerInactiveTintColor: '#cccccc', 
         drawerStyle: {
-          backgroundColor: '#4f4f4f',
+          backgroundColor: '#ffffff',
         },
         headerStyle: {
-          backgroundColor: '#4f4f4f', 
+          backgroundColor: '#ffffff', 
         },
         headerTintColor: '#ffffff',
       }} 
@@ -34,16 +34,7 @@ export default function PrivateRoutes() {
           drawerLabel: "Página Inicial",
         }}
       />
-      {/* <Drawer.Screen
-        name="Profile"
-        component={Profile}
-        options={{
-          drawerIcon: ({ color, size }) => (
-            <Feather name="user" size={size} color={color} />
-          ),
-          drawerLabel: "Meu perfil",
-        }}
-      /> */}
+      {}
       <Drawer.Screen
         name="Settings"
         component={Settings}
