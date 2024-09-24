@@ -12,13 +12,13 @@ export default function PrivateRoutes() {
       screenOptions={{ 
         title: "", 
         drawerActiveBackgroundColor: '#333333', 
-        drawerActiveTintColor: '#ffffff', 
+        drawerActiveTintColor: '#00b300', 
         drawerInactiveTintColor: '#cccccc', 
         drawerStyle: {
-          backgroundColor: '#ffffff',
+          backgroundColor: '#00b300',
         },
         headerStyle: {
-          backgroundColor: '#ffffff', 
+          backgroundColor: '#00b300', 
         },
         headerTintColor: '#ffffff',
       }} 
