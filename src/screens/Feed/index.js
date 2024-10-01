@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Alert, ScrollView, TouchableOpacity, TextInput } from "react-native";
+import { Alert, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from "react-native";
 import styled from "styled-components/native";
 import { useAuth } from "../../contexts/AuthContext";
+import { Ionicons } from '@expo/vector-icons';
 
 export default function Feed() {
   const { user, getPosts, createPost, likePost, unlikePost, commentPost } = useAuth();
@@ -10,6 +11,7 @@ export default function Feed() {
   const [commentMessages, setCommentMessages] = useState({});
   const [page, setPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadPosts();
@@ -23,19 +25,23 @@ export default function Feed() {
       setPosts(refresh ? fetchedPosts : [...posts, ...fetchedPosts]);
       setPage(newPage + 1);
     } catch (error) {
-      Alert.alert("Error", "Falhou ao carregar posts");
+      Alert.alert("Error", "Falhou ao carregar os posts");
     } finally {
       setRefreshing(false);
     }
   }
 
   async function handleCreatePost() {
+    if (!newPostMessage.trim()) return;
     try {
+      setLoading(true);
       const newPost = await createPost(newPostMessage);
       setPosts([newPost, ...posts]);
       setNewPostMessage("");
     } catch (error) {
-      Alert.alert("Error", "Falhou ao criar post");
+      Alert.alert("Error", "Falhou ao criar o post");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -47,7 +53,7 @@ export default function Feed() {
       );
       setPosts(updatedPosts);
     } catch (error) {
-      Alert.alert("Error", "Falhou ao curtir post");
+      Alert.alert("Error", "Falhou ao curtir o post");
     }
   }
 
@@ -59,15 +65,16 @@ export default function Feed() {
       );
       setPosts(updatedPosts);
     } catch (error) {
-      Alert.alert("Error", "Falhou ao descurtir post");
+      Alert.alert("Error", "Failed to unlike post");
     }
   }
 
   async function handleCommentPost(postId) {
-    try {
-      const message = commentMessages[postId];
-      if (!message) return;
+    const message = commentMessages[postId];
+    if (!message?.trim()) return;
 
+    try {
+      setLoading(true);
       const newComment = await commentPost(postId, message);
       const updatedPosts = posts.map(post =>
         post.id === postId ? { ...post, comments: [...(post.comments || []), newComment] } : post
@@ -75,7 +82,9 @@ export default function Feed() {
       setPosts(updatedPosts);
       setCommentMessages({ ...commentMessages, [postId]: "" });
     } catch (error) {
-      Alert.alert("Error", "Failed to comment on post");
+      Alert.alert("Error", "Falhou ao comentar no post");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -93,15 +102,15 @@ export default function Feed() {
         </LogoContainer>
 
         <NewPostContainer>
-          <TextInput
-            placeholder="O que você está pensando?"
+          <StyledTextInput
+            placeholder="Diga o que estar pensando..."
             value={newPostMessage}
             onChangeText={setNewPostMessage}
-            style={{ color: '#ffffff' }}
+            multiline
           />
-          <TouchableOpacity onPress={handleCreatePost}>
-            <ActionButtonText>Post</ActionButtonText>
-          </TouchableOpacity>
+          <PostButton onPress={handleCreatePost} disabled={loading}>
+            {loading ? <ActivityIndicator color="#FFFFFF" /> : <PostButtonText>Post</PostButtonText>}
+          </PostButton>
         </NewPostContainer>
 
         {posts.map((post) => (
@@ -109,9 +118,12 @@ export default function Feed() {
             <Username>{post.user_login}</Username>
             <Caption>{post.message}</Caption>
             <LikesText>{post.likes_count || 0} likes</LikesText>
-            <TouchableOpacity onPress={() => post.liked ? handleUnlikePost(post.id) : handleLikePost(post.id)}>
+            <ActionContainer>
+              <LikeButton onPress={() => post.liked ? handleUnlikePost(post.id) : handleLikePost(post.id)}>
+                <Ionicons name={post.liked ? "heart" : "heart-outline"} size={24} color={post.liked ? "#FF6B6B" : "#FFFFFF"} />
+              </LikeButton>
               <ActionButtonText>{post.liked ? "Unlike" : "Like"}</ActionButtonText>
-            </TouchableOpacity>
+            </ActionContainer>
             <CommentsContainer>
               {post.comments && post.comments.map((comment) => (
                 <CommentText key={comment.id}>
@@ -120,15 +132,14 @@ export default function Feed() {
                 </CommentText>
               ))}
             </CommentsContainer>
-            <TextInput
-              placeholder="Adicione um comentár..."
+            <StyledTextInput
+              placeholder="Adicione um coment..."
               value={commentMessages[post.id] || ""}
               onChangeText={(text) => setCommentMessages({ ...commentMessages, [post.id]: text })}
-              style={{ color: '#ffffff' }}
             />
-            <TouchableOpacity onPress={() => handleCommentPost(post.id)}>
-              <ActionButtonText>Comment</ActionButtonText>
-            </TouchableOpacity>
+            <CommentButton onPress={() => handleCommentPost(post.id)} disabled={loading}>
+              {loading ? <ActivityIndicator color="#FFFFFF" /> : <ActionButtonText>Comente aqui</ActionButtonText>}
+            </CommentButton>
           </PostContainer>
         ))}
       </ScrollView>
@@ -138,7 +149,7 @@ export default function Feed() {
 
 const MainContainer = styled.View`
   flex: 1;
-  background-color: #121212;
+  background-color: #1E1E1E;
   padding: 20px;
 `;
 
@@ -151,7 +162,7 @@ const LogoContainer = styled.View`
   height: 80px;
   justify-content: center;
   align-items: center;
-  background-color: #2e2e2e;
+  background-color: #2C2C2C;
   border-radius: 15px;
   margin-bottom: 20px;
 `;
@@ -159,12 +170,12 @@ const LogoContainer = styled.View`
 const LogoText = styled.Text`
   font-size: 28px;
   font-weight: bold;
-  color: #00ff00;
+  color: #4CAF50;
   text-align: center;
 `;
 
 const NewPostContainer = styled.View`
-  background-color: #2e2e2e;
+  background-color: #2C2C2C;
   border-radius: 15px;
   padding: 15px;
   margin-bottom: 20px;
@@ -172,8 +183,7 @@ const NewPostContainer = styled.View`
 
 const PostContainer = styled.View`
   width: 100%;
-  height: auto;
-  background-color: #2e2e2e;
+  background-color: #2C2C2C;
   border-radius: 15px;
   padding: 15px;
   margin-bottom: 20px;
@@ -182,20 +192,30 @@ const PostContainer = styled.View`
 const Username = styled.Text`
   font-size: 18px;
   font-weight: bold;
-  color: #ffffff;
+  color: #FFFFFF;
   margin-bottom: 10px;
 `;
 
 const Caption = styled.Text`
   font-size: 16px;
-  color: #ffffff;
+  color: #FFFFFF;
   margin-bottom: 10px;
 `;
 
 const LikesText = styled.Text`
   font-size: 14px;
-  color: #b3b3b3;
+  color: #B3B3B3;
   margin-bottom: 5px;
+`;
+
+const ActionContainer = styled.View`
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 10px;
+`;
+
+const LikeButton = styled.TouchableOpacity`
+  margin-right: 10px;
 `;
 
 const CommentsContainer = styled.View`
@@ -204,17 +224,45 @@ const CommentsContainer = styled.View`
 
 const CommentText = styled.Text`
   font-size: 14px;
-  color: #ffffff;
+  color: #FFFFFF;
   margin-bottom: 5px;
 `;
 
 const CommentUser = styled.Text`
   font-weight: bold;
-  color: #b3b3b3;
+  color: #B3B3B3;
 `;
 
 const ActionButtonText = styled.Text`
-  color: #00ff00;
+  color: #4CAF50;
   font-size: 16px;
   font-weight: bold;
+`;
+
+const StyledTextInput = styled.TextInput`
+  background-color: #3C3C3C;
+  border-radius: 10px;
+  padding: 10px;
+  color: #FFFFFF;
+  margin-bottom: 10px;
+`;
+
+const PostButton = styled.TouchableOpacity`
+  background-color: #4CAF50;
+  border-radius: 10px;
+  padding: 10px;
+  align-items: center;
+`;
+
+const PostButtonText = styled.Text`
+  color: #FFFFFF;
+  font-size: 16px;
+  font-weight: bold;
+`;
+
+const CommentButton = styled.TouchableOpacity`
+  background-color: #3C3C3C;
+  border-radius: 10px;
+  padding: 10px;
+  align-items: center;
 `;

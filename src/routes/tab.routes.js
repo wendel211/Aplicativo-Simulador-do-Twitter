@@ -32,20 +32,6 @@ export default function TabRoutes() {
 					tabBarLabel: "Início",
 				}}
 			/>
-			<Tab.Screen
-				name="NewPost"
-				component={NewPost}
-				options={{
-					tabBarIcon: ({ color, size }) => (
-						<MaterialCommunityIcons
-							name="file-document-edit-outline"
-							size={size}
-							color={color}
-						/>
-					),
-					tabBarLabel: "Crie um Post",
-				}}
-			/>
 						<Tab.Screen
 				name="SearchPost"
 				component={SearchPost}
