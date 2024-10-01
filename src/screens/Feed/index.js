@@ -1,102 +1,137 @@
-import React, { useState } from "react";
-import { Alert, ScrollView, TouchableOpacity, Image } from "react-native";
+import React, { useState, useEffect } from "react";
+import { Alert, ScrollView, TouchableOpacity, TextInput } from "react-native";
 import styled from "styled-components/native";
-
-const feedData = [
-  {
-    id: 1,
-    usuario: "usuario123",
-    imagemUrl: "https://picsum.photos/400/300",
-    legenda: "Dia lindo na praia! 🌊☀️",
-    curtidas: 156,
-    comentarios: [
-      { usuario: "amanteDaPraia", texto: "Parece incrível! Gostaria de estar lá." },
-      { usuario: "viajante", texto: "Qual praia é essa?" },
-    ],
-  },
-  {
-    id: 2,
-    usuario: "galDaComida",
-    imagemUrl: "https://picsum.photos/400/300",
-    legenda: "Deliciosa massa caseira para o jantar 🍝👨‍🍳",
-    curtidas: 89,
-    comentarios: [
-      { usuario: "fãDeMassa", texto: "Receita, por favor!" },
-      { usuario: "comedorSaudavel", texto: "Parece delicioso e nutritivo!" },
-    ],
-  },
-  {
-    id: 3,
-    usuario: "geekDaTecnologia",
-    imagemUrl: "https://picsum.photos/400/300",
-    legenda: "Novo smartphone chegou! 📱🚀",
-    curtidas: 203,
-    comentarios: [
-      { usuario: "GokuMaisBrabo", texto: "Vale a pena a expectativa?" },
-      { usuario: "oldSchool", texto: "Queria comprar esse ceular, vc ta gostando?" },
-    ],
-  },
-];
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function Feed() {
-  const [posts, setPosts] = useState(feedData || []); 
+  const { user, getPosts, createPost, likePost, unlikePost, commentPost } = useAuth();
+  const [posts, setPosts] = useState([]);
+  const [newPostMessage, setNewPostMessage] = useState("");
+  const [commentMessages, setCommentMessages] = useState({});
+  const [page, setPage] = useState(1);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const handleRefresh = () => {
-    const novoPost = {
-      id: posts.length + 1,
-      usuario: "novoUsuario" + (posts.length + 1),
-      imagemUrl: "https://picsum.photos/400/300",
-      legenda: "Novo post adicionado! " + new Date().toLocaleString(),
-      curtidas: Math.floor(Math.random() * 100),
-      comentarios: [
-        { usuario: "usuarioAleatorio", texto: "Ótimo novo post!" },
-        { usuario: "entusiasta", texto: "Continue postando!" },
-      ],
-    };
+  useEffect(() => {
+    loadPosts();
+  }, []);
 
-    setPosts([novoPost, ...posts]);
-    Alert.alert("Sucesso", "Feed atualizado com sucesso!");
-  };
+  async function loadPosts(refresh = false) {
+    try {
+      setRefreshing(true);
+      const newPage = refresh ? 1 : page;
+      const fetchedPosts = await getPosts(newPage);
+      setPosts(refresh ? fetchedPosts : [...posts, ...fetchedPosts]);
+      setPage(newPage + 1);
+    } catch (error) {
+      Alert.alert("Error", "Falhou ao carregar posts");
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  async function handleCreatePost() {
+    try {
+      const newPost = await createPost(newPostMessage);
+      setPosts([newPost, ...posts]);
+      setNewPostMessage("");
+    } catch (error) {
+      Alert.alert("Error", "Falhou ao criar post");
+    }
+  }
+
+  async function handleLikePost(postId) {
+    try {
+      await likePost(postId);
+      const updatedPosts = posts.map(post =>
+        post.id === postId ? { ...post, liked: true, likes_count: (post.likes_count || 0) + 1 } : post
+      );
+      setPosts(updatedPosts);
+    } catch (error) {
+      Alert.alert("Error", "Falhou ao curtir post");
+    }
+  }
+
+  async function handleUnlikePost(postId) {
+    try {
+      await unlikePost(postId);
+      const updatedPosts = posts.map(post =>
+        post.id === postId ? { ...post, liked: false, likes_count: Math.max((post.likes_count || 0) - 1, 0) } : post
+      );
+      setPosts(updatedPosts);
+    } catch (error) {
+      Alert.alert("Error", "Falhou ao descurtir post");
+    }
+  }
+
+  async function handleCommentPost(postId) {
+    try {
+      const message = commentMessages[postId];
+      if (!message) return;
+
+      const newComment = await commentPost(postId, message);
+      const updatedPosts = posts.map(post =>
+        post.id === postId ? { ...post, comments: [...(post.comments || []), newComment] } : post
+      );
+      setPosts(updatedPosts);
+      setCommentMessages({ ...commentMessages, [postId]: "" });
+    } catch (error) {
+      Alert.alert("Error", "Failed to comment on post");
+    }
+  }
 
   return (
     <MainContainer>
-      <LogoContainer>
-        <LogoText>Seu Feed</LogoText>
-      </LogoContainer>
+      <ScrollView
+        contentContainerStyle={scrollViewStyle}
+        onRefresh={() => loadPosts(true)}
+        refreshing={refreshing}
+        onEndReached={() => loadPosts()}
+        onEndReachedThreshold={0.1}
+      >
+        <LogoContainer>
+          <LogoText>Papacapim</LogoText>
+        </LogoContainer>
 
-      <ScrollView contentContainerStyle={scrollViewStyle}>
-        <FeedTitle>Feed de Posts</FeedTitle>
-        {posts.length > 0 ? (
-          posts.map((post) => (
-            <PostContainer key={post.id}>
-              <Username>{post.usuario}</Username>
-              <PostImage source={{ uri: post.imagemUrl }} />
-              <Caption>{post.legenda}</Caption>
-              <LikesText>❤️ {post.curtidas} curtidas</LikesText>
-              <CommentsContainer>
-                {post.comentarios.map((comentario, index) => (
-                  <CommentText key={index}>
-                    <CommentUser>{comentario.usuario}:</CommentUser> {comentario.texto}
-                  </CommentText>
-                ))}
-              </CommentsContainer>
-            </PostContainer>
-          ))
-        ) : (
-          <Caption>Sem posts para exibir.</Caption>
-        )}
-      </ScrollView>
-
-      <FormContainer>
-        <FormTitle>Carregar novos posts?</FormTitle>
-        <Footer>
-          <TouchableOpacity onPress={handleRefresh}>
-            <ActionButton>
-              <ActionButtonText>(Atualizar Feed)</ActionButtonText>
-            </ActionButton>
+        <NewPostContainer>
+          <TextInput
+            placeholder="O que você está pensando?"
+            value={newPostMessage}
+            onChangeText={setNewPostMessage}
+            style={{ color: '#ffffff' }}
+          />
+          <TouchableOpacity onPress={handleCreatePost}>
+            <ActionButtonText>Post</ActionButtonText>
           </TouchableOpacity>
-        </Footer>
-      </FormContainer>
+        </NewPostContainer>
+
+        {posts.map((post) => (
+          <PostContainer key={post.id}>
+            <Username>{post.user_login}</Username>
+            <Caption>{post.message}</Caption>
+            <LikesText>{post.likes_count || 0} likes</LikesText>
+            <TouchableOpacity onPress={() => post.liked ? handleUnlikePost(post.id) : handleLikePost(post.id)}>
+              <ActionButtonText>{post.liked ? "Unlike" : "Like"}</ActionButtonText>
+            </TouchableOpacity>
+            <CommentsContainer>
+              {post.comments && post.comments.map((comment) => (
+                <CommentText key={comment.id}>
+                  <CommentUser>{comment.user_login}: </CommentUser>
+                  {comment.message}
+                </CommentText>
+              ))}
+            </CommentsContainer>
+            <TextInput
+              placeholder="Adicione um comentár..."
+              value={commentMessages[post.id] || ""}
+              onChangeText={(text) => setCommentMessages({ ...commentMessages, [post.id]: text })}
+              style={{ color: '#ffffff' }}
+            />
+            <TouchableOpacity onPress={() => handleCommentPost(post.id)}>
+              <ActionButtonText>Comment</ActionButtonText>
+            </TouchableOpacity>
+          </PostContainer>
+        ))}
+      </ScrollView>
     </MainContainer>
   );
 }
@@ -109,7 +144,6 @@ const MainContainer = styled.View`
 
 const scrollViewStyle = {
   flexGrow: 1,
-  alignItems: "center",
 };
 
 const LogoContainer = styled.View`
@@ -129,14 +163,16 @@ const LogoText = styled.Text`
   text-align: center;
 `;
 
-const FeedTitle = styled.Text`
-  font-size: 24px;
-  color: #ffffff;
+const NewPostContainer = styled.View`
+  background-color: #2e2e2e;
+  border-radius: 15px;
+  padding: 15px;
   margin-bottom: 20px;
 `;
 
 const PostContainer = styled.View`
   width: 100%;
+  height: auto;
   background-color: #2e2e2e;
   border-radius: 15px;
   padding: 15px;
@@ -147,13 +183,6 @@ const Username = styled.Text`
   font-size: 18px;
   font-weight: bold;
   color: #ffffff;
-  margin-bottom: 10px;
-`;
-
-const PostImage = styled.Image`
-  width: 100%;
-  height: 200px;
-  border-radius: 10px;
   margin-bottom: 10px;
 `;
 
@@ -184,39 +213,8 @@ const CommentUser = styled.Text`
   color: #b3b3b3;
 `;
 
-const FormContainer = styled.View`
-  background-color: #1c1c1c;
-  padding: 20px;
-  border-radius: 25px;
-  align-items: center;
-  elevation: 5;
-  margin-top: 20px;
-`;
-
-const FormTitle = styled.Text`
-  font-size: 22px;
-  color: #ffffff;
-  margin-bottom: 20px;
-  font-weight: bold;
-  text-align: center;
-`;
-
-const Footer = styled.View`
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-`;
-
-const ActionButton = styled.View`
-  background-color: #00b300;
-  padding: 14px 20px;
-  border-radius: 25px;
-  width: 100%;
-  align-items: center;
-`;
-
 const ActionButtonText = styled.Text`
-  color: #ffffff;
+  color: #00ff00;
   font-size: 16px;
   font-weight: bold;
 `;

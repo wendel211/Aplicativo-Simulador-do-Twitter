@@ -30,7 +30,7 @@ export default function SearchPost() {
 
         <TextInput
           style={styles.input}
-          placeholder="Digite o conteúdo da postagem..."
+          placeholder="Escreva sua postagem..."
           value={searchQuery}
            placeholderTextColor="#ffffff"
           onChangeText={setSearchQuery}
