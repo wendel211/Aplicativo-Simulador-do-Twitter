@@ -2,7 +2,6 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import Feed from "../screens/Feed";
-import NewPost from "../screens/CreatePost";
 import SearchPost from "../screens/SearchPost";
 import SearchUser from "../screens/SearchProfile";
 
