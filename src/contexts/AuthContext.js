@@ -59,6 +59,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const getOnePosts = async (page = 1, feed = 0, postId = null) => {
+    try {
+      const endpoint = postId ? `/posts/${postId}` : `/posts?page=${page}&feed=${feed}`;
+      const response = await api.get(endpoint);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+      throw error;
+    }
+  };
+  
+
   const createPost = async (message) => {
     try {
       const response = await api.post("/posts", { post: { message } });
@@ -97,6 +109,17 @@ export const AuthProvider = ({ children }) => {
       throw error;
     }
   };
+  const SearchPost = async (searchQuery) => {
+    try {
+      const response = await api.get(`/posts?search=${searchQuery}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error searching post:", error);
+      throw error;
+    }
+  }
+
+
 
   return (
     <AuthContext.Provider
@@ -108,10 +131,12 @@ export const AuthProvider = ({ children }) => {
         signOut,
         register,
         getPosts,
+        getOnePosts,
         createPost,
         likePost,
         unlikePost,
         commentPost,
+        SearchPost,
       }}
     >
       {children}

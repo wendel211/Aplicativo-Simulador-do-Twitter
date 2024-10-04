@@ -3,10 +3,26 @@ import React, { useState } from "react";
 import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Alert } from "react-native";
 
 import { MaterialCommunityIcons, Feather } from "@expo/vector-icons";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function SearchPost() {
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState([]);
+
+
+  const { SearchPost, getOnePosts} = useAuth();
+
+
+  const fetchPosts = async () => {
+    try {
+      const posts = await getPosts();
+      console.log("Posts:", posts);
+    } catch (error) {
+      Alert.alert("Error", "Falhou ao carregar os posts");
+    }
+  };
+
+
 
   const handleSearch = () => {
     if (searchQuery.trim() === "") {
