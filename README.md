@@ -62,6 +62,3 @@ expo start
 
 **API**
 Este aplicativo consome uma API chamada Papacapim para todas as operações de login, registro, postagens e interações. A API deve estar rodando para que as funcionalidades de gerenciamento de contas e postagens funcionem corretamente.
-
-Contribuição
-Pull requests são bem-vindos. Para mudanças maiores, por favor abra uma issue primeiro para discutir o que você gostaria de mudar.
