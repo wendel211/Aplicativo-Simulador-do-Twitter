@@ -1,87 +1,98 @@
-import React, { useState } from "react";
-
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Alert } from "react-native";
-
-import { MaterialCommunityIcons, Feather } from "@expo/vector-icons";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAuth } from "../../contexts/AuthContext";
 
 export default function SearchPost() {
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
+  const { SearchPost } = useAuth(); // Obtendo a função SearchPost do AuthContext
 
-  const { SearchPost, getOnePosts} = useAuth();
+  useEffect(() => {
+    const debounce = setTimeout(() => {
+      if (searchQuery.trim() !== "") {
+        handleSearch();
+      } else {
+        setResults([]); // Limpa os resultados se a query estiver vazia
+      }
+    }, 500);
+    return () => clearTimeout(debounce);
+  }, [searchQuery]);
 
-
-  const fetchPosts = async () => {
+  const handleSearch = async () => {
+    setIsLoading(true);
     try {
-      const posts = await getPosts();
-      console.log("Posts:", posts);
+      const searchResults = await SearchPost({ search: searchQuery }); // Passando a busca como parâmetro
+      setResults(searchResults);
     } catch (error) {
-      Alert.alert("Error", "Falhou ao carregar os posts");
+      Alert.alert("Erro", "Falha ao buscar as postagens. Por favor, tente novamente.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-
-
-  const handleSearch = () => {
-    if (searchQuery.trim() === "") {
-      Alert.alert("Atenção", "Digite o conteúdo da postagem para pesquisar.");
-      return;
+  const renderResults = () => {
+    if (isLoading) {
+      return <ActivityIndicator size="large" color="#00ff00" />;
     }
 
-    setResults([`Buscando por: ${searchQuery}`]);
+    if (results.length === 0 && searchQuery.trim() !== "") {
+      return <Text style={styles.noResults}>Nenhum resultado encontrado</Text>;
+    }
+
+    return results.map((result) => (
+      <View key={result.id} style={styles.resultItem}>
+        <Text style={styles.resultText}>{result.message}</Text>
+        <Text style={styles.resultUser}>Por: {result.user_login}</Text>
+        <Text style={styles.resultDate}>
+          {new Date(result.created_at).toLocaleString()}
+        </Text>
+      </View>
+    ));
   };
 
   return (
-    <View style={styles.container}> 
-
+    <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.header}>
           <MaterialCommunityIcons name="post" size={24} color="#00ff00" />
-          <Text style={styles.description}>
-              Pesquise por conteúdo de postagens
-          </Text>
+          <Text style={styles.description}>Pesquise por conteúdo de postagens</Text>
         </View>
 
         <TextInput
           style={styles.input}
-          placeholder="Escreva sua postagem..."
+          placeholder="Escreva sua pesquisa..."
           value={searchQuery}
-           placeholderTextColor="#ffffff"
+          placeholderTextColor="#999999"
           onChangeText={setSearchQuery}
           multiline
           textAlignVertical="center"
         />
 
-        <View style={styles.resultsContainer}>
-          <View style={styles.resultsSearch}>
-            {results.map((result, index) => (
-              <Text key={index}>{result}</Text>
-            ))}
-          </View>
-        </View>
+        <View style={styles.resultsContainer}>{renderResults()}</View>
       </ScrollView>
-
-      <View></View>
-        <TouchableOpacity style={styles.button} onPress={handleSearch}>
-          <Feather name="search" size={24} color="#ffffff" />
-          <Text style={styles.buttonText}> Encontre seus posts clicando aqui</Text>
-        </TouchableOpacity>
-      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121212", 
+    backgroundColor: "#121212",
     padding: 16,
-    justifyContent: "center",
   },
   scrollContainer: {
     flexGrow: 1,
-    justifyContent: "flex-start",
   },
   header: {
     flexDirection: "row",
@@ -89,10 +100,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   description: {
-    fontSize: 18,
-    color: "#ffffff", 
+    fontSize: 16,
+    color: "#ffffff",
     marginLeft: 10,
-    fontWeight: "bold", 
+    fontWeight: "bold",
   },
   input: {
     height: 50,
@@ -102,37 +113,34 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 15,
     marginBottom: 20,
-    borderRadius: 8, 
-    fontSize: 16, 
+    borderRadius: 8,
+    fontSize: 16,
   },
   resultsContainer: {
     marginBottom: 20,
   },
+  resultItem: {
+    marginBottom: 10,
+    padding: 10,
+    backgroundColor: "#1c1c1c",
+    borderRadius: 5,
+  },
   resultText: {
     fontSize: 16,
-    color: "#ffffff", 
-    marginBottom: 5,
-    padding: 10, 
-    backgroundColor: "#1c1c1c", 
-    borderRadius: 5, 
+    color: "#ffffff",
   },
-  button: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#00ff00",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 50,
-    width: "100%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+  resultUser: {
+    fontSize: 12,
+    color: "#999999",
   },
-  buttonText: {
-    color: "#ffffff", 
-    fontSize: 16, 
+  resultDate: {
+    fontSize: 10,
+    color: "#999999",
+  },
+  noResults: {
+    fontSize: 16,
+    color: "#999999",
+    textAlign: "center",
+    marginTop: 20,
   },
 });
