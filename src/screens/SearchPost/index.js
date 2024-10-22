@@ -1,7 +1,5 @@
 import React, { useState } from "react";
-
 import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Alert } from "react-native";
-
 import { MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -9,74 +7,78 @@ export default function SearchPost() {
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState([]);
 
+  const { SearchPost } = useAuth(); // Função de pesquisa no contexto
 
-  const { SearchPost, getOnePosts} = useAuth();
-
-
-  const fetchPosts = async () => {
-    try {
-      const posts = await getPosts();
-      console.log("Posts:", posts);
-    } catch (error) {
-      Alert.alert("Error", "Falhou ao carregar os posts");
-    }
-  };
-
-
-
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (searchQuery.trim() === "") {
       Alert.alert("Atenção", "Digite o conteúdo da postagem para pesquisar.");
       return;
     }
 
-    setResults([`Buscando por: ${searchQuery}`]);
+    try {
+      // Chama a função de pesquisa passando o termo buscado
+      const response = await SearchPost(searchQuery);
+      if (response.length > 0) {
+        setResults(response); // Define os resultados retornados pela API
+      } else {
+        setResults([`Nenhum post encontrado para: ${searchQuery}`]);
+      }
+    } catch (error) {
+      Alert.alert("Erro", "Ocorreu um erro ao buscar os posts.");
+      console.error("Erro ao buscar posts:", error);
+    }
   };
 
   return (
-    <View style={styles.container}> 
-
+    <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
+        {/* Cabeçalho */}
         <View style={styles.header}>
           <MaterialCommunityIcons name="post" size={24} color="#00ff00" />
           <Text style={styles.description}>
-              Pesquise por conteúdo de postagens
+            Pesquise por conteúdo de postagens
           </Text>
         </View>
 
+        {/* Campo de Pesquisa */}
         <TextInput
           style={styles.input}
-          placeholder="Escreva sua postagem..."
+          placeholder="Digite o conteúdo da postagem..."
           value={searchQuery}
-           placeholderTextColor="#ffffff"
+          placeholderTextColor="#a9a9a9"
           onChangeText={setSearchQuery}
           multiline
           textAlignVertical="center"
         />
 
+        {/* Resultados */}
         <View style={styles.resultsContainer}>
-          <View style={styles.resultsSearch}>
-            {results.map((result, index) => (
-              <Text key={index}>{result}</Text>
-            ))}
-          </View>
+          {results.map((result, index) => (
+            typeof result === "string" ? (
+              <Text key={index} style={styles.resultText}>{result}</Text>
+            ) : (
+              <View key={index} style={styles.resultItem}>
+                <Text style={styles.resultText}>{result.message}</Text>
+              </View>
+            )
+          ))}
         </View>
       </ScrollView>
 
-      <View></View>
-        <TouchableOpacity style={styles.button} onPress={handleSearch}>
-          <Feather name="search" size={24} color="#ffffff" />
-          <Text style={styles.buttonText}> Encontre seus posts clicando aqui</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Botão de Busca */}
+      <TouchableOpacity style={styles.button} onPress={handleSearch}>
+        <Feather name="search" size={24} color="#ffffff" />
+        <Text style={styles.buttonText}>Buscar Postagens</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121212", 
-    padding: 16,
+    backgroundColor: "#121212",
+    padding: 20,
     justifyContent: "center",
   },
   scrollContainer: {
@@ -90,31 +92,33 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 18,
-    color: "#ffffff", 
+    color: "#ffffff",
     marginLeft: 10,
-    fontWeight: "bold", 
+    fontWeight: "bold",
   },
   input: {
-    height: 50,
     backgroundColor: "#1c1c1c",
     color: "#ffffff",
     borderColor: "#00ff00",
     borderWidth: 1,
     paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 8,
+    fontSize: 16,
     marginBottom: 20,
-    borderRadius: 8, 
-    fontSize: 16, 
   },
   resultsContainer: {
     marginBottom: 20,
   },
+  resultItem: {
+    backgroundColor: "#1c1c1c",
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
   resultText: {
     fontSize: 16,
-    color: "#ffffff", 
-    marginBottom: 5,
-    padding: 10, 
-    backgroundColor: "#1c1c1c", 
-    borderRadius: 5, 
+    color: "#ffffff",
   },
   button: {
     flexDirection: "row",
@@ -132,7 +136,8 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   buttonText: {
-    color: "#ffffff", 
-    fontSize: 16, 
+    color: "#ffffff",
+    fontSize: 16,
+    marginLeft: 10,
   },
 });
